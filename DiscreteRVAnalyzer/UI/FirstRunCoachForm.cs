@@ -12,7 +12,7 @@ namespace DiscreteRVAnalyzer.UI
         private Label messageLabel;
         private Button nextButton;
         private Button skipButton;
-        private Rectangle highlightRect;
+        private Rectangle highlightRect; // in screen coordinates
 
         private static bool _isRunning = false; // prevent concurrent sequences
 
@@ -28,13 +28,17 @@ namespace DiscreteRVAnalyzer.UI
             var screen = Screen.FromPoint(new Point(targetBounds.Left, targetBounds.Top));
             Bounds = screen.Bounds;
 
-            highlightRect = targetBounds;
+            highlightRect = targetBounds; // keep screen coords
+
+            // determine message position in screen coords then convert to client coords
+            var messageScreenPoint = PlaceMessageNear(targetBounds, screen.Bounds);
+            var messageClientPoint = PointToClient(messageScreenPoint);
 
             messageLabel = new Label
             {
                 AutoSize = false,
                 Size = new Size(420, 120),
-                Location = PlaceMessageNear(targetBounds, screen.Bounds),
+                Location = messageClientPoint,
                 BackColor = Color.White,
                 ForeColor = Color.Black,
                 Padding = new Padding(12),
@@ -46,7 +50,7 @@ namespace DiscreteRVAnalyzer.UI
 
             nextButton = new Button
             {
-                Text = "Далее",
+                Text = "Далі",
                 AutoSize = true,
                 BackColor = Color.White,
                 ForeColor = Color.Black,
@@ -56,17 +60,18 @@ namespace DiscreteRVAnalyzer.UI
 
             skipButton = new Button
             {
-                Text = "Пропустить",
+                Text = "Пропустити",
                 AutoSize = true,
                 BackColor = Color.White,
                 ForeColor = Color.Black,
                 FlatStyle = FlatStyle.Standard,
-                Location = new Point(messageLabel.Left + 10, messageLabel.Bottom - 35)
+                // will set Location after adding messageLabel so we can use its bounds
             };
             skipButton.Click += (s, e) => { DialogResult = DialogResult.Cancel; Close(); };
 
-            // position next button
+            // position next/skip buttons relative to messageLabel (client coords)
             nextButton.Location = new Point(messageLabel.Right - 90, messageLabel.Bottom - 35);
+            skipButton.Location = new Point(messageLabel.Left + 10, messageLabel.Bottom - 35);
 
             Controls.Add(messageLabel);
             Controls.Add(nextButton);
@@ -103,7 +108,7 @@ namespace DiscreteRVAnalyzer.UI
                 y = screen.Bottom - height - 20;
             }
             if (y < screen.Top) y = screen.Top + 20;
-            return new Point(x, y);
+            return new Point(x, y); // screen coordinates
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -116,15 +121,18 @@ namespace DiscreteRVAnalyzer.UI
                 e.Graphics.FillRectangle(brush, ClientRectangle);
             }
 
+            // Convert highlightRect (screen coords) to client coords for drawing
+            var clientRect = RectangleToClient(highlightRect);
+
             // Draw highlight rectangle (bright border)
             using (var pen = new Pen(Color.Yellow, 3))
             {
-                e.Graphics.DrawRectangle(pen, highlightRect);
+                e.Graphics.DrawRectangle(pen, clientRect);
             }
 
             // Draw an arrow from message box to rectangle (simple line)
             var start = new Point(messageLabel.Left + 20, messageLabel.Top + messageLabel.Height / 2);
-            var end = new Point(highlightRect.Left + highlightRect.Width / 2, highlightRect.Top + highlightRect.Height / 2);
+            var end = new Point(clientRect.Left + clientRect.Width / 2, clientRect.Top + clientRect.Height / 2);
             using (var pen = new Pen(Color.White, 2))
             {
                 e.Graphics.DrawLine(pen, start, end);

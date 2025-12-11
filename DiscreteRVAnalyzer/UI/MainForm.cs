@@ -15,6 +15,7 @@ using DiscreteRVAnalyzer.Services;
 using DiscreteRVAnalyzer.Services.Distributions;
 using DiscreteRVAnalyzer.Utils;
 using DiscreteRVAnalyzer;
+using DiscreteRVAnalyzer.Resources;
 
 namespace DiscreteRVAnalyzer.UI
 {
@@ -40,6 +41,18 @@ namespace DiscreteRVAnalyzer.UI
         {
             InitializeComponent();
 
+            // Ensure combobox contains only manual distribution in this simplified mode
+            distributionComboBox.Items.Clear();
+            distributionComboBox.Items.Add("🔧 Довільна ДВВ");
+            distributionComboBox.SelectedIndex = 0;
+
+            // Initialize manual input grid columns and behavior
+            InitializeManualInputGrid();
+
+            // Hook DataError to show friendly message instead of default dialog
+            if (manualInputGrid != null)
+                manualInputGrid.DataError += ManualInputGrid_DataError;
+
             // Load saved settings early
             LoadSettings();
 
@@ -60,6 +73,25 @@ namespace DiscreteRVAnalyzer.UI
 
             // Save settings on exit
             this.FormClosing += (s, e) => SaveSettings();
+        }
+
+        /// <summary>
+        /// Завантажити приклад даних у таблицю (з дошки)
+        /// </summary>
+        private void LoadExampleFromBoard()
+        {
+            if (manualInputGrid == null) return;
+
+            manualInputGrid.Rows.Clear();
+
+            // Дані: X={1,2,3,4,5}, P={0.16, 0.31, 0.32, 0.15, 0.06}
+            manualInputGrid.Rows.Add(1, 0.16);
+            manualInputGrid.Rows.Add(2, 0.31);
+            manualInputGrid.Rows.Add(3, 0.32);
+            manualInputGrid.Rows.Add(4, 0.15);
+            manualInputGrid.Rows.Add(5, 0.06);
+
+            statusLabel.Text = "Завантажено приклад";
         }
 
         private bool ValidateVisibleParameters()
@@ -93,7 +125,7 @@ namespace DiscreteRVAnalyzer.UI
                             if (pErr)
                             {
                                 var binErr = InputValidator.ValidateBinomial(n, p);
-                                if (binErr != null) errors.Add($"Параметры биномиального: {binErr}");
+                                if (binErr != null) errors.Add($"Параметри біноміального: {binErr}");
                             }
                             break;
                         case 3: // Гипергеометрическое
@@ -101,7 +133,7 @@ namespace DiscreteRVAnalyzer.UI
                                 InputValidator.TryParseInt(textBoxP.Text, 1, int.MaxValue, out var sampleSize, out _))
                             {
                                 var hypErr = InputValidator.ValidateHypergeometric(n, k, sampleSize);
-                                if (hypErr != null) errors.Add($"Параметры гипергеометрического: {hypErr}");
+                                if (hypErr != null) errors.Add($"Параметри гіпергеометричного: {hypErr}");
                             }
                             break;
                     }
@@ -169,7 +201,7 @@ namespace DiscreteRVAnalyzer.UI
             {
                 if ((manualInputGrid?.Rows.Count ?? 0) == 0)
                 {
-                    errors.Add("Таблица ввода пуста. Добавьте хотя бы одну строку.");
+                    errors.Add("Таблиця вводу порожня. Додайте хоча б один рядок.");
                 }
             }
 
@@ -178,9 +210,9 @@ namespace DiscreteRVAnalyzer.UI
             {
                 string errorMessage = string.Join("\n", errors);
 
-                ErrorHandler.ShowUserWarning(errorMessage, "Ошибки валидации");
+                ErrorHandler.ShowUserWarning(errorMessage, "Помилки валідації");
 
-                statusLabel.Text = "✗ Ошибка в параметрах";
+                statusLabel.Text = "✗ Помилка в параметрах";
                 return false;
             }
 
@@ -229,15 +261,27 @@ namespace DiscreteRVAnalyzer.UI
         {
             var steps = new (string message, object target)[]
             {
-        ("Выберите тип распределения здесь.\nНапример: 'Биномиальное B(n,p)'", (object)distributionComboBox),
-        ("Введите число испытаний 'n' здесь (целое).", (object)textBoxN),
-        ("Введите вероятность 'p' здесь (0..1).", (object)textBoxP),
-        ("Нажмите 'Рассчитать' чтобы выполнить вычисления и построить графики.", (object)calculateButton),
-        ("Переключитесь на вкладку 'Таблица значений' чтобы внести произвольную ДВВ.\nДобавьте строки X и P.", (object)chartTabControl)
+                (Strings.Coach_SelectDistribution, (object)distributionComboBox),
+                (Strings.Coach_FillTable, (object)manualInputGrid),
+                (Strings.Coach_PressCalculate, (object)calculateButton)
             };
 
             FirstRunCoachForm.RunSequence(this, steps);
         }
+
+        // DataError handler to suppress default DataGridView dialog and show user-friendly message
+        private void ManualInputGrid_DataError(object? sender, DataGridViewDataErrorEventArgs e)
+        {
+            // Log error
+            ErrorHandler.LogError(e.Exception, "Помилка вводу в таблиці");
+
+            // Show friendly Ukrainian message and cancel the error so default dialog doesn't appear
+            MessageBox.Show(Strings.InvalidInputCell, Strings.UserErrorTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+            e.ThrowException = false;
+            e.Cancel = true;
+        }
+
 
         // ===== ВСПОМОГАТЕЛЬНЫЙ ПАРСЕР DOUBLE =====
         private static double ParseDouble(string text)
@@ -311,7 +355,7 @@ namespace DiscreteRVAnalyzer.UI
         {
             try
             {
-                statusLabel.Text = "⏳ Проверка параметров...";
+                statusLabel.Text = Strings.CheckingParameters;
                 statusProgressBar.Visible = true;
                 statusProgressBar.Value = 5;
                 Application.DoEvents();
@@ -384,7 +428,7 @@ namespace DiscreteRVAnalyzer.UI
                     if (_currentStats == null)
                         throw new InvalidOperationException("Расчёт вернул null");
 
-                    statusLabel.Text = "✓ Расчёт выполнен";
+                    statusLabel.Text = "✓ Расчёт виконано";
                 }
                 catch (Exception calcEx)
                 {
@@ -410,7 +454,7 @@ namespace DiscreteRVAnalyzer.UI
                 }
 
                 statusProgressBar.Value = 100;
-                statusLabel.Text = $"✓ Готово | Размер носителя: {_currentRV?.SupportSize ?? 0} | Точность: {(_currentStats?.Mean ?? 0):F4}";
+                statusLabel.Text = $"✓ Готово | Размер носителя: {_currentRV?.SupportSize ?? 0} | Точність: {(_currentStats?.Mean ?? 0):F4}";
 
                 // Сохранение параметров
                 SaveSettings();
@@ -432,7 +476,7 @@ namespace DiscreteRVAnalyzer.UI
             Theme.Apply(this, _currentTheme);
             // Update button text to indicate current theme
             themeToggleButton.Text = _currentTheme == ThemeMode.Dark ? "☀️ Светлая" : "🌙 Тёмная";
-            statusLabel.Text = _currentTheme == ThemeMode.Dark ? "Тёмная тема" : "Светлая тема";
+            statusLabel.Text = _currentTheme == ThemeMode.Dark ? "Тёмна тема" : "Світла тема";
             SaveSettings();
         }
 
@@ -530,86 +574,98 @@ namespace DiscreteRVAnalyzer.UI
             };
 
             var dict = new Dictionary<int, double>();
-            DataGridView source = null;
 
-            // Выбираем источник данных
-            if (manualInputGrid?.Rows.Count > 0)
-                source = manualInputGrid;
-            else if (gridManual?.Rows.Count > 0)
-                source = gridManual;
-
-            if (source == null)
+            // Используем только manualInputGrid как источник
+            if (manualInputGrid == null || manualInputGrid.Rows.Count == 0)
                 throw new InvalidOperationException("Таблица ДВВ пуста. Заполните хотя бы одну строку.");
 
-
             double totalProbability = 0;
+            int validRowCount = 0;
 
             // Парсим таблицу
-            foreach (DataGridViewRow row in source.Rows)
+            foreach (DataGridViewRow row in manualInputGrid.Rows)
             {
+                // Пропускаем пустые строки и строку для добавления
                 if (row.IsNewRow) continue;
 
                 try
                 {
-                    object xObj = source == manualInputGrid
-                        ? row.Cells["colX"].Value 
+                    // Читаем значения из колонок "colX" и "colP"
+                    object xObj = row.Cells["colX"].Value;
+                    object pObj = row.Cells["colP"].Value;
 
-                        : (row.Cells.Count > 0 ? row.Cells[0].Value : null);
-
-                    object pObj = source == manualInputGrid
-                        ? row.Cells["colP"].Value 
-
-                        : (row.Cells.Count > 1 ? row.Cells[1].Value : null);
-
-                    if (xObj == null || pObj == null)
+                    // Пропускаем строки с пустыми ячейками
+                    if (xObj == null || pObj == null ||
+                        string.IsNullOrWhiteSpace(xObj.ToString()) ||
+                        string.IsNullOrWhiteSpace(pObj.ToString()))
                         continue;
 
-                    // Парсим X
-                    string xStr = xObj.ToString()?.Trim().Replace(',', '.') ?? "";
-                    if (!double.TryParse(xStr, System.Globalization.NumberStyles.Float,
-                System.Globalization.CultureInfo.InvariantCulture, out var xVal))
-                        throw new FormatException($"Некорректное значение X: '{xObj}'");
+                    // Парсим X (целое число)
+                    string xStr = xObj.ToString().Trim().Replace(',', '.');
+                    if (!int.TryParse(xStr, out int xVal))
+                    {
+                        throw new FormatException($"Некорректное значение X в строке {row.Index + 1}: '{xObj}'");
+                    }
 
-            // Парсим P
-                    string pStr = pObj.ToString()?.Trim().Replace(',', '.') ?? "";
-                    if (!double.TryParse(pStr, System.Globalization.NumberStyles.Float,
-                System.Globalization.CultureInfo.InvariantCulture, out var pVal))
-                        throw new FormatException($"Некорректное значение P: '{pObj}'");
+                    // Парсим P (вероятность)
+                    string pStr = pObj.ToString().Trim().Replace(',', '.');
+                    if (!double.TryParse(pStr,
+                        System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out double pVal))
+                    {
+                        throw new FormatException($"Некорректное значение P в строке {row.Index + 1}: '{pObj}'");
+                    }
 
-            if (pVal < 0)
-                        throw new ArgumentException($"Вероятность не может быть отрицательной (X={xVal})");
+                    // Валидация вероятности
+                    if (pVal < 0 || pVal > 1)
+                    {
+                        throw new ArgumentException(
+                            $"Вероятность P(X={xVal}) = {pVal} должна быть в диапазоне [0, 1] (строка {row.Index + 1})");
+                    }
 
-            if (pVal > 1)
-                        throw new ArgumentException($"Вероятность не может быть > 1 (X={xVal})");
+                    // Проверка на дубликаты
+                    if (dict.ContainsKey(xVal))
+                    {
+                        throw new ArgumentException(
+                            $"Значение X={xVal} встречается несколько раз! Каждое значение должно быть уникальным.");
+                    }
 
-
-                    int xInt = (int)Math.Round(xVal);
+                    dict[xVal] = pVal;
                     totalProbability += pVal;
-
-                    if (dict.ContainsKey(xInt))
-                        dict[xInt] += pVal;
-                    else
-                        dict[xInt] = pVal;
+                    validRowCount++;
                 }
                 catch (Exception rowEx)
                 {
-                    ErrorHandler.LogError(rowEx, $"Ошибка при парсинге строки {row.Index}");
-
-                    throw new InvalidOperationException($"Ошибка в строке {row.Index}: {rowEx.Message}");
+                    ErrorHandler.LogError(rowEx, $"Ошибка при парсинге строки {row.Index + 1}");
+                    throw new InvalidOperationException($"Ошибка в строке {row.Index + 1}: {rowEx.Message}", rowEx);
                 }
             }
 
-            if (Math.Abs(totalProbability) < 0.01)
-                throw new InvalidOperationException("Сумма вероятностей близка к нулю");
+            // Проверка, что хоть что-то прочитано
+            if (validRowCount == 0)
+                throw new InvalidOperationException("Таблица не содержит корректных данных.");
 
+            // Проверка суммы вероятностей
+            if (Math.Abs(totalProbability - 1.0) > 0.01)
+            {
+                ErrorHandler.LogError(
+                    new Exception($"Сумма вероятностей = {totalProbability:F6}"),
+                    "Предупреждение о нормализации");
+            }
 
             rv.LoadDistribution(dict);
-            rv.Normalize();
+
+            // Нормализуем, если сумма не ровно 1
+            if (Math.Abs(totalProbability - 1.0) > 1e-9)
+            {
+                rv.Normalize();
+            }
+
             rv.Validate();
 
             return rv;
         }
-
 
         // ===== ОБНОВЛЕНИЕ СТАТИСТИКИ И ГРАФИКОВ =====
 
@@ -706,11 +762,6 @@ namespace DiscreteRVAnalyzer.UI
             var altGroup = new ListViewGroup("Стандартные распределения");
             statisticsListView1.Groups.Add(altGroup);
 
-            bool parsedN = int.TryParse(textBoxN.Text?.Trim(), out var n);
-            bool parsedK = int.TryParse(textBoxK.Text?.Trim(), out var k);
-            bool parsedP = double.TryParse((textBoxP.Text ?? string.Empty).Trim().Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var p);
-            bool parsedLambda = double.TryParse((textBoxLambda.Text ?? string.Empty).Trim().Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lambda);
-
             ListViewItem AddItem(string name, string value)
             {
                 var lvi = new ListViewItem(name) { Group = altGroup };
@@ -721,41 +772,84 @@ namespace DiscreteRVAnalyzer.UI
 
             try
             {
-                if (parsedN && parsedP)
+                // Prefer using calculated statistics from the current RV when available
+                double mean = double.NaN, variance = double.NaN;
+                if (_currentStats != null)
                 {
-                    var bin = new DiscreteRVAnalyzer.BinomialDist(n, p);
-                    AddItem($"{bin.Name} M(X)", bin.Mean.ToString("F4"));
-                    AddItem($"{bin.Name} D(X)", bin.Variance.ToString("F4"));
+                    mean = _currentStats.Mean;
+                    variance = _currentStats.Variance;
+                }
+                else
+                {
+                    // Fallback: try to parse UI fields (legacy behaviour)
+                    if (!double.TryParse((textBoxN.Text ?? string.Empty).Trim().Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out mean))
+                        mean = double.NaN;
+                    if (!double.TryParse((textBoxP.Text ?? string.Empty).Trim().Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out variance))
+                        variance = double.NaN;
                 }
 
-                if (parsedLambda)
+                // POISSON estimate: lambda = mean (if available)
+                if (!double.IsNaN(mean))
                 {
-                    var poi = new DiscreteRVAnalyzer.PoissonDist(lambda);
-                    AddItem($"{poi.Name} M(X)", poi.Mean.ToString("F4"));
-                    AddItem($"{poi.Name} D(X)", poi.Variance.ToString("F4"));
+                    var lambda = mean;
+                    AddItem($"Пуассона M(X)", lambda.ToString("F4"));
+                    AddItem($"Пуассона D(X)", lambda.ToString("F4"));
                 }
 
-                if (parsedP)
+                // BINOMIAL estimate: from mean and variance derive p and N
+                if (!double.IsNaN(mean) && !double.IsNaN(variance) && mean > 0)
                 {
-                    var geo = new DiscreteRVAnalyzer.GeometricDist(p);
-                    AddItem($"{geo.Name} M(X)", geo.Mean.ToString("F4"));
-                    AddItem($"{geo.Name} D(X)", geo.Variance.ToString("F4"));
-                }
-
-                if (parsedN && parsedK)
-                {
-                    // For uniform as an example use K as upper bound? We'll skip hypergeometric here.
-                    // If K looks like b use uniform
-                    int a = 0, b = 0;
-                    if (parsedK)
+                    // variance = N p (1-p), mean = N p => variance/mean = 1-p => p = 1 - variance/mean
+                    double pEst = 1.0 - (variance / mean);
+                    if (pEst > 0 && pEst < 1)
                     {
-                        // interpret textBoxN as a and textBoxK as b only if sensible
-                        a = n; b = k;
-                        if (b >= a)
+                        double nEstReal = mean / pEst;
+                        int nEst = (int)Math.Round(nEstReal);
+                        if (nEst > 0)
+                        {
+                            double theoMean = nEst * pEst;
+                            double theoVar = nEst * pEst * (1 - pEst);
+                            AddItem($"Биномиальный p", pEst.ToString("F4"));
+                            AddItem($"Биномиальный N", nEst.ToString());
+                            AddItem($"Биномиальный M(X)", theoMean.ToString("F4"));
+                            AddItem($"Биномиальный D(X)", theoVar.ToString("F4"));
+                        }
+                    }
+                }
+
+                // GEOMETRIC estimate: mean = 1/p => p = 1/mean
+                if (!double.IsNaN(mean) && mean > 0)
+                {
+                    double pGeo = 1.0 / mean;
+                    if (pGeo > 0 && pGeo < 1)
+                    {
+                        double theoMean = 1.0 / pGeo;
+                        double theoVar = (1 - pGeo) / (pGeo * pGeo);
+                        AddItem($"Геометрический p", pGeo.ToString("F4"));
+                        AddItem($"Геометрический M(X)", theoMean.ToString("F4"));
+                        AddItem($"Геометрический D(X)", theoVar.ToString("F4"));
+                    }
+                }
+
+                // UNIFORM estimate: if we have current RV, use its support min/max
+                if (_currentRV != null)
+                {
+                    var distDict = _currentRV.Distribution; // IReadOnlyDictionary<int,double>
+                    if (distDict != null && distDict.Count > 0)
+                    {
+                        int a = int.MaxValue, b = int.MinValue;
+                        foreach (var x in distDict.Keys)
+                        {
+                            if (x < a) a = x;
+                            if (x > b) b = x;
+                        }
+                        if (a <= b)
                         {
                             var uni = new DiscreteRVAnalyzer.UniformDist(a, b);
-                            AddItem($"{uni.Name} M(X)", uni.Mean.ToString("F4"));
-                            AddItem($"{uni.Name} D(X)", uni.Variance.ToString("F4"));
+                            AddItem($"Равномерный a", a.ToString());
+                            AddItem($"Равномерный b", b.ToString());
+                            AddItem($"Равномерный M(X)", uni.Mean.ToString("F4"));
+                            AddItem($"Равномерный D(X)", uni.Variance.ToString("F4"));
                         }
                     }
                 }
@@ -848,7 +942,7 @@ namespace DiscreteRVAnalyzer.UI
             gridManual.Rows.Clear();
             if (manualInputGrid != null) manualInputGrid.Rows.Clear();
 
-            statusLabel.Text = "Параметры сброшены";
+            statusLabel.Text = "Параметри сброшені";
 
             SaveSettings();
         }
@@ -888,7 +982,7 @@ namespace DiscreteRVAnalyzer.UI
                     break;
             }
 
-            statusLabel.Text = "Экспортировано";
+            statusLabel.Text = "Експортовано";
         }
 
         private void OnSaveReport(object? sender, EventArgs e) => ExportButton_Click(sender, e);
@@ -910,11 +1004,11 @@ namespace DiscreteRVAnalyzer.UI
                 _currentStats = CalculationService.Calculate(_currentRV);
                 UpdateStatistics();
                 UpdateCharts();
-                statusLabel.Text = "Конфигурация загружена";
+                statusLabel.Text = "Конфігурація завантажена";
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка загрузки: {ex.Message}", "Ошибка",
+                MessageBox.Show($"Помилка завантаження: {ex.Message}", "Помилка",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -923,7 +1017,7 @@ namespace DiscreteRVAnalyzer.UI
         {
             if (_currentRV == null)
             {
-                MessageBox.Show("Нет текущего распределения.", "Информация",
+                MessageBox.Show("Немає поточного розподілу.", "Інформація",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -940,11 +1034,11 @@ namespace DiscreteRVAnalyzer.UI
             try
             {
                 File.WriteAllText(dlg.FileName, ExportService.ExportToJson(_currentRV));
-                statusLabel.Text = "Конфигурация сохранена";
+                statusLabel.Text = "Конфігурація збережена";
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка сохранения: {ex.Message}", "Ошибка",
+                MessageBox.Show($"Помилка збереження: {ex.Message}", "Помилка",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -952,8 +1046,8 @@ namespace DiscreteRVAnalyzer.UI
         private void OnShowAbout(object? sender, EventArgs e)
         {
             MessageBox.Show(
-                "Анализ дискретных случайных величин\n.NET / WinForms / OxyPlot",
-                "О программе",
+                "Аналіз дискретних випадкових величин\n.NET / WinForms / OxyPlot",
+                "О програмі",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
         }
@@ -961,11 +1055,11 @@ namespace DiscreteRVAnalyzer.UI
         private void OnShowGuide(object? sender, EventArgs e)
         {
             MessageBox.Show(
-                "1. Выберите распределение.\n" +
-                "2. Введите параметры слева или заполните таблицу X,P для произвольной ДВВ.\n" +
-                "3. Нажмите 'Рассчитать'.\n" +
-                "4. Смотрите характеристики и графики справа.",
-                "Справка",
+                "1. Виберіть розподіл.\n" +
+                "2. Введіть параметри зліва або заповніть таблицю X,P для довільної ДВВ.\n" +
+                "3. Натисніть 'Розрахувати'.\n" +
+                "4. Дивіться характеристики та графіки справа.",
+                "Довідка",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
         }
@@ -979,43 +1073,108 @@ namespace DiscreteRVAnalyzer.UI
         private void ShowFirstRunWizard()
         {
             MessageBox.Show(
-                "Это приложение считает числовые характеристики дискретных случайных величин\n" +
-                "и строит графики PMF и CDF.\n\n" +
-                "Начните с выбора распределения и ввода параметров или таблицы X,P.",
-                "Добро пожаловать",
+                "Цей додаток обчислює числові характеристики дискретних випадкових величин\n" +
+                "та будує графіки PMF і CDF.\n\n" +
+                "Почніть з вибору розподілу та введення параметрів або таблиці X,P.",
+                "Ласкаво просимо",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
         }
-        // Добавьте этот код в класс MainForm (в файле MainForm.cs)
 
-        private void OnExitClick(object sender, EventArgs e)
+        /// <summary>
+        /// Инициализация DataGridView для ввода произвольной ДВВ
+        /// </summary>
+        private void InitializeManualInputGrid()
         {
-            this.Close();
+            if (manualInputGrid == null) return;
+
+            manualInputGrid.Columns.Clear();
+
+            var colX = new DataGridViewTextBoxColumn
+            {
+                Name = "colX",
+                HeaderText = "X (значение)",
+                Width = 100,
+                ValueType = typeof(int)
+            };
+            manualInputGrid.Columns.Add(colX);
+
+            var colP = new DataGridViewTextBoxColumn
+            {
+                Name = "colP",
+                HeaderText = "P (вероятность)",
+                Width = 120,
+                ValueType = typeof(double)
+            };
+            manualInputGrid.Columns.Add(colP);
+
+            manualInputGrid.AllowUserToAddRows = true;
+            manualInputGrid.AllowUserToDeleteRows = true;
+            manualInputGrid.MultiSelect = false;
+            manualInputGrid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+
+            // Accept both comma and dot as decimal separator when user edits the cell
+            manualInputGrid.CellParsing -= ManualInputGrid_CellParsing;
+            manualInputGrid.CellParsing += ManualInputGrid_CellParsing;
         }
 
-        private void OnResetClick(object sender, EventArgs e)
+        // Parse user input in probability column to double accepting both ',' and '.':
+        private void ManualInputGrid_CellParsing(object? sender, DataGridViewCellParsingEventArgs e)
         {
-            // Вызывает ваш существующий метод сброса
-            ResetParameters();
+            if (manualInputGrid == null) return;
+
+            try
+            {
+                var col = manualInputGrid.Columns[e.ColumnIndex];
+                if (col == null) return;
+
+                if (col.Name == "colP")
+                {
+                    if (e.Value == null) return;
+                    var s = e.Value.ToString();
+                    if (string.IsNullOrWhiteSpace(s)) return;
+
+                    // normalize both comma and dot to invariant format
+                    var norm = s.Trim().Replace(',', '.');
+                    if (double.TryParse(norm, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d))
+                    {
+                        e.Value = d;
+                        e.ParsingApplied = true;
+                    }
+                }
+
+                if (col.Name == "colX")
+                {
+                    if (e.Value == null) return;
+                    var s = e.Value.ToString();
+                    if (string.IsNullOrWhiteSpace(s)) return;
+
+                    // allow integer parsing with trimming
+                    if (int.TryParse(s.Trim(), out var iv))
+                    {
+                        e.Value = iv;
+                        e.ParsingApplied = true;
+                    }
+                }
+            }
+            catch
+            {
+                // let default handling show the error via DataError event / default dialog
+            }
         }
 
-        private void OnCopyResultsClick(object sender, EventArgs e)
+        // Обработчик для кнопки "Пример"
+        private void LoadExampleButton_Click(object? sender, EventArgs e)
         {
-            // Вызывает ваш существующий метод копирования
-            CopyResults();
+            LoadExampleFromBoard();
         }
 
-        private void OnTestCoachClick(object? sender, EventArgs e)
-        {
-            // Run the guided coach sequence for testing (do not modify firstrun.flag)
-            RunFirstRunCoach();
-        }
-
-        private void ExportPmfButton_Click(object sender, EventArgs e)
+        // Event handler wrappers expected by Designer
+        private void ExportPmfButton_Click(object? sender, EventArgs e)
         {
             if (pmfPlotView?.Model == null)
             {
-                MessageBox.Show("PMF не построен.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(Strings.PmfNotBuilt, Strings.UserErrorTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -1025,21 +1184,21 @@ namespace DiscreteRVAnalyzer.UI
             try
             {
                 using var bmp = new System.Drawing.Bitmap(pmfPlotView.Width, pmfPlotView.Height);
-                pmfPlotView.DrawToBitmap(bmp, new Rectangle(0, 0, bmp.Width, bmp.Height));
+                pmfPlotView.DrawToBitmap(bmp, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height));
                 bmp.Save(dlg.FileName, System.Drawing.Imaging.ImageFormat.Png);
-                statusLabel.Text = "PMF экспортирован";
+                statusLabel.Text = Strings.PmfExported;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка экспорта PMF: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Помилка експорту PMF: {ex.Message}", "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void ExportCdfButton_Click(object sender, EventArgs e)
+        private void ExportCdfButton_Click(object? sender, EventArgs e)
         {
             if (cdfPlotView?.Model == null)
             {
-                MessageBox.Show("CDF не построен.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("CDF не побудовано.", "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -1049,14 +1208,35 @@ namespace DiscreteRVAnalyzer.UI
             try
             {
                 using var bmp = new System.Drawing.Bitmap(cdfPlotView.Width, cdfPlotView.Height);
-                cdfPlotView.DrawToBitmap(bmp, new Rectangle(0, 0, bmp.Width, bmp.Height));
+                cdfPlotView.DrawToBitmap(bmp, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height));
                 bmp.Save(dlg.FileName, System.Drawing.Imaging.ImageFormat.Png);
-                statusLabel.Text = "CDF экспортирован";
+                statusLabel.Text = "CDF експортовано";
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка экспорта CDF: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Помилка експорту CDF: {ex.Message}", "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void OnCopyResultsClick(object? sender, EventArgs e)
+        {
+            CopyResults();
+        }
+
+        private void OnResetClick(object? sender, EventArgs e)
+        {
+            ResetParameters();
+        }
+
+        private void OnTestCoachClick(object? sender, EventArgs e)
+        {
+            // Run the guided coach sequence for testing (do not modify firstrun.flag)
+            RunFirstRunCoach();
+        }
+
+        private void OnExitClick(object? sender, EventArgs e)
+        {
+            this.Close();
         }
     }
 }

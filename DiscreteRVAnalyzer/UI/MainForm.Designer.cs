@@ -185,78 +185,78 @@ namespace DiscreteRVAnalyzer.UI
             // fileLoadConfigMenuItem
             // 
             fileLoadConfigMenuItem.Name = "fileLoadConfigMenuItem";
-            fileLoadConfigMenuItem.Size = new Size(228, 22);
-            fileLoadConfigMenuItem.Text = "Загрузить конфигурацию...";
+            fileLoadConfigMenuItem.Size = new Size(233, 22);
+            fileLoadConfigMenuItem.Text = "Завантажити конфігурацію...";
             fileLoadConfigMenuItem.Click += OnLoadConfig;
             // 
             // fileSaveConfigMenuItem
             // 
             fileSaveConfigMenuItem.Name = "fileSaveConfigMenuItem";
-            fileSaveConfigMenuItem.Size = new Size(228, 22);
-            fileSaveConfigMenuItem.Text = "Сохранить конфигурацию...";
+            fileSaveConfigMenuItem.Size = new Size(233, 22);
+            fileSaveConfigMenuItem.Text = "Зберегти конфігурацію...";
             fileSaveConfigMenuItem.Click += OnSaveConfig;
             // 
             // exportPmfMenuItem
             // 
             exportPmfMenuItem.Name = "exportPmfMenuItem";
-            exportPmfMenuItem.Size = new Size(228, 22);
-            exportPmfMenuItem.Text = "Экспорт PMF...";
+            exportPmfMenuItem.Size = new Size(233, 22);
+            exportPmfMenuItem.Text = "Експорт PMF...";
             exportPmfMenuItem.Click += ExportPmfButton_Click;
             // 
             // exportCdfMenuItem
             // 
             exportCdfMenuItem.Name = "exportCdfMenuItem";
-            exportCdfMenuItem.Size = new Size(228, 22);
-            exportCdfMenuItem.Text = "Экспорт CDF...";
+            exportCdfMenuItem.Size = new Size(233, 22);
+            exportCdfMenuItem.Text = "Експорт CDF...";
             exportCdfMenuItem.Click += ExportCdfButton_Click;
             // 
             // fileExitMenuItem
             // 
             fileExitMenuItem.Name = "fileExitMenuItem";
-            fileExitMenuItem.Size = new Size(228, 22);
-            fileExitMenuItem.Text = "Выход";
+            fileExitMenuItem.Size = new Size(233, 22);
+            fileExitMenuItem.Text = "Вихід";
             fileExitMenuItem.Click += OnExitClick;
             // 
             // editMenu
             // 
             editMenu.DropDownItems.AddRange(new ToolStripItem[] { editCopyResultsMenuItem, editResetMenuItem });
             editMenu.Name = "editMenu";
-            editMenu.Size = new Size(74, 20);
-            editMenu.Text = "✏️ Правка";
+            editMenu.Size = new Size(94, 20);
+            editMenu.Text = "✏️ Редагувати";
             // 
             // editCopyResultsMenuItem
             // 
             editCopyResultsMenuItem.Name = "editCopyResultsMenuItem";
-            editCopyResultsMenuItem.Size = new Size(204, 22);
-            editCopyResultsMenuItem.Text = "Копировать результаты";
+            editCopyResultsMenuItem.Size = new Size(195, 22);
+            editCopyResultsMenuItem.Text = "Копіювати результати";
             editCopyResultsMenuItem.Click += OnCopyResultsClick;
             // 
             // editResetMenuItem
             // 
             editResetMenuItem.Name = "editResetMenuItem";
-            editResetMenuItem.Size = new Size(204, 22);
-            editResetMenuItem.Text = "Сбросить параметры";
+            editResetMenuItem.Size = new Size(195, 22);
+            editResetMenuItem.Text = "Скинути параметри";
             editResetMenuItem.Click += OnResetClick;
             // 
             // helpMenu
             // 
             helpMenu.DropDownItems.AddRange(new ToolStripItem[] { helpGuideMenuItem, helpAboutMenuItem });
             helpMenu.Name = "helpMenu";
-            helpMenu.Size = new Size(80, 20);
-            helpMenu.Text = "❓ Справка";
+            helpMenu.Size = new Size(76, 20);
+            helpMenu.Text = "❓ Довідка";
             // 
             // helpGuideMenuItem
             // 
             helpGuideMenuItem.Name = "helpGuideMenuItem";
-            helpGuideMenuItem.Size = new Size(224, 22);
-            helpGuideMenuItem.Text = "Интерактивная инструкция";
+            helpGuideMenuItem.Size = new Size(204, 22);
+            helpGuideMenuItem.Text = "Інтерактивна інструкція";
             helpGuideMenuItem.Click += OnShowGuide;
             // 
             // helpAboutMenuItem
             // 
             helpAboutMenuItem.Name = "helpAboutMenuItem";
-            helpAboutMenuItem.Size = new Size(224, 22);
-            helpAboutMenuItem.Text = "О программе";
+            helpAboutMenuItem.Size = new Size(204, 22);
+            helpAboutMenuItem.Text = "Про програму";
             helpAboutMenuItem.Click += OnShowAbout;
             // 
             // toolStrip
@@ -275,14 +275,14 @@ namespace DiscreteRVAnalyzer.UI
             // toolStripLabel1
             // 
             toolStripLabel1.Name = "toolStripLabel1";
-            toolStripLabel1.Size = new Size(109, 20);
-            toolStripLabel1.Text = "📊 Распределение:";
+            toolStripLabel1.Size = new Size(74, 20);
+            toolStripLabel1.Text = "📊 Розподіл:";
             // 
             // distributionComboBox
             // 
             distributionComboBox.AutoSize = false;
             distributionComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            distributionComboBox.Items.AddRange(new object[] { "🔧 Произвольная ДВВ" });
+            distributionComboBox.Items.AddRange(new object[] { "🔧 Довільна ДВВ" });
             distributionComboBox.Name = "distributionComboBox";
             distributionComboBox.Size = new Size(250, 23);
             distributionComboBox.SelectedIndexChanged += DistributionComboBox_SelectedIndexChanged;
@@ -292,9 +292,9 @@ namespace DiscreteRVAnalyzer.UI
             calculateButton.BackColor = Color.FromArgb(39, 174, 96);
             calculateButton.ForeColor = Color.White;
             calculateButton.Name = "calculateButton";
-            calculateButton.Size = new Size(85, 20);
-            calculateButton.Text = "▶️ Рассчитать";
-            calculateButton.ToolTipText = "Выполнить расчёт и построить графики";
+            calculateButton.Size = new Size(86, 20);
+            calculateButton.Text = "▶️ Обчислити";
+            calculateButton.ToolTipText = "Виконати обчислення та побудувати графіки";
             calculateButton.Click += CalculateButton_Click;
             // 
             // exportButton
@@ -302,9 +302,9 @@ namespace DiscreteRVAnalyzer.UI
             exportButton.BackColor = Color.FromArgb(52, 152, 219);
             exportButton.ForeColor = Color.White;
             exportButton.Name = "exportButton";
-            exportButton.Size = new Size(115, 20);
-            exportButton.Text = "📥 Экспортировать";
-            exportButton.ToolTipText = "Экспортировать текущее распределение и отчёт";
+            exportButton.Size = new Size(100, 20);
+            exportButton.Text = "📥 Експортувати";
+            exportButton.ToolTipText = "Експортувати поточний розподіл та звіт";
             exportButton.Click += ExportButton_Click;
             // 
             // themeToggleButton
@@ -315,7 +315,7 @@ namespace DiscreteRVAnalyzer.UI
             themeToggleButton.Name = "themeToggleButton";
             themeToggleButton.Size = new Size(54, 20);
             themeToggleButton.Text = "🌙 Тема";
-            themeToggleButton.ToolTipText = "Переключить тему (тёмная/светлая)";
+            themeToggleButton.ToolTipText = "Перемкнути тему (темна/світла)";
             themeToggleButton.Click += ThemeToggleButton_Click;
             // 
             // testCoachButton
@@ -324,9 +324,9 @@ namespace DiscreteRVAnalyzer.UI
             testCoachButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
             testCoachButton.ForeColor = Color.White;
             testCoachButton.Name = "testCoachButton";
-            testCoachButton.Size = new Size(102, 20);
-            testCoachButton.Text = "Тест инструкция";
-            testCoachButton.ToolTipText = "Запустить тестовую инструкцию";
+            testCoachButton.Size = new Size(94, 20);
+            testCoachButton.Text = "Тест інструкція";
+            testCoachButton.ToolTipText = "Запустити тестову інструкцію";
             testCoachButton.Click += OnTestCoachClick;
             // 
             // mainTableLayout
@@ -382,7 +382,7 @@ namespace DiscreteRVAnalyzer.UI
             parametersGroupBox.Size = new Size(368, 214);
             parametersGroupBox.TabIndex = 0;
             parametersGroupBox.TabStop = false;
-            parametersGroupBox.Text = "⚙️ Параметры";
+            parametersGroupBox.Text = "⚙️ Параметри";
             // 
             // paramsTableLayout
             // 
@@ -428,8 +428,6 @@ namespace DiscreteRVAnalyzer.UI
             textBoxN.Name = "textBoxN";
             textBoxN.Size = new Size(206, 23);
             textBoxN.TabIndex = 1;
-            toolTip.SetToolTip(textBoxN, "Число испытаний (целое, n >= 0)");
-            textBoxN.Validating += TextBoxInteger_Validating;
             // 
             // labelP
             // 
@@ -448,8 +446,6 @@ namespace DiscreteRVAnalyzer.UI
             textBoxP.Name = "textBoxP";
             textBoxP.Size = new Size(206, 23);
             textBoxP.TabIndex = 3;
-            toolTip.SetToolTip(textBoxP, "Вероятность успеха (0 ≤ p ≤ 1)");
-            textBoxP.Validating += TextBoxProbability_Validating;
             // 
             // labelLambda
             // 
@@ -468,8 +464,6 @@ namespace DiscreteRVAnalyzer.UI
             textBoxLambda.Name = "textBoxLambda";
             textBoxLambda.Size = new Size(206, 23);
             textBoxLambda.TabIndex = 5;
-            toolTip.SetToolTip(textBoxLambda, "Параметр λ (> 0)");
-            textBoxLambda.Validating += TextBoxPositiveDouble_Validating;
             // 
             // labelK
             // 
@@ -488,8 +482,6 @@ namespace DiscreteRVAnalyzer.UI
             textBoxK.Name = "textBoxK";
             textBoxK.Size = new Size(206, 23);
             textBoxK.TabIndex = 7;
-            toolTip.SetToolTip(textBoxK, "Число благоприятных (целое, K >= 0)");
-            textBoxK.Validating += TextBoxInteger_Validating;
             // 
             // resetButton
             // 
@@ -500,7 +492,7 @@ namespace DiscreteRVAnalyzer.UI
             resetButton.Name = "resetButton";
             resetButton.Size = new Size(356, 78);
             resetButton.TabIndex = 8;
-            resetButton.Text = "Сбросить";
+            resetButton.Text = "Скинути";
             resetButton.UseVisualStyleBackColor = false;
             resetButton.Click += OnResetClick;
             // 
@@ -514,7 +506,7 @@ namespace DiscreteRVAnalyzer.UI
             manualInputGroupBox.Size = new Size(368, 244);
             manualInputGroupBox.TabIndex = 1;
             manualInputGroupBox.TabStop = false;
-            manualInputGroupBox.Text = "📋 Таблица ввода (произвольная ДВВ)";
+            manualInputGroupBox.Text = "📋 Таблиця вводу (довільна ДВВ)";
             // 
             // manualInputGrid
             // 
@@ -531,12 +523,12 @@ namespace DiscreteRVAnalyzer.UI
             // 
             // colX
             // 
-            colX.HeaderText = "X (значение)";
+            colX.HeaderText = "X (значення)";
             colX.Name = "colX";
             // 
             // colP
             // 
-            colP.HeaderText = "P (вероятность)";
+            colP.HeaderText = "P (ймовірність)";
             colP.Name = "colP";
             // 
             // statisticsGroupBox
@@ -633,7 +625,7 @@ namespace DiscreteRVAnalyzer.UI
             tableTabPage.Name = "tableTabPage";
             tableTabPage.Size = new Size(1176, 777);
             tableTabPage.TabIndex = 2;
-            tableTabPage.Text = "Таблица значений";
+            tableTabPage.Text = "Таблиця значень";
             // 
             // gridManual
             // 
@@ -704,7 +696,7 @@ namespace DiscreteRVAnalyzer.UI
             MainMenuStrip = menuStrip;
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "Анализ дискретных случайных величин";
+            Text = "Аналіз дискретних випадкових величин";
             menuStrip.ResumeLayout(false);
             menuStrip.PerformLayout();
             toolStrip.ResumeLayout(false);
