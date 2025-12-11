@@ -14,6 +14,7 @@ using DiscreteRVAnalyzer.Models;
 using DiscreteRVAnalyzer.Services;
 using DiscreteRVAnalyzer.Services.Distributions;
 using DiscreteRVAnalyzer.Utils;
+using DiscreteRVAnalyzer;
 
 namespace DiscreteRVAnalyzer.UI
 {
@@ -325,9 +326,13 @@ namespace DiscreteRVAnalyzer.UI
                 DiscreteRandomVariable currentRV = null;
                 try
                 {
-                    if (distributionComboBox.SelectedIndex == 4)
+                    bool arbitraryOnly = distributionComboBox.Items.Count == 1;
+
+                    // Если режим — только произвольная ДВВ или выбран явно произвольный пункт (индекс 4),
+                    // строим RV из таблицы manualInputGrid
+                    if (arbitraryOnly || distributionComboBox.SelectedIndex == 4)
                     {
-                        // Произвольная ДВВ
+                        // Явно строим из manualInputGrid
                         currentRV = BuildManualRandomVariable();
                     }
                     else
@@ -345,7 +350,6 @@ namespace DiscreteRVAnalyzer.UI
                 catch (ArgumentException argEx)
                 {
                     ErrorHandler.LogError(argEx, "Ошибка параметров");
-
                     ErrorHandler.ShowUserWarning($"Ошибка параметров: {argEx.Message}");
                     return;
                 }
@@ -361,49 +365,31 @@ namespace DiscreteRVAnalyzer.UI
                 catch (InvalidOperationException invalidEx)
                 {
                     ErrorHandler.LogError(invalidEx, "Распределение невалидно");
-
                     ErrorHandler.ShowUserWarning($"Распределение некорректно: {invalidEx.Message}");
                     return;
                 }
 
+                // Сохраняем текущее распределение
                 _currentRV = currentRV;
+
                 statusProgressBar.Value = 60;
                 Application.DoEvents();
 
-                // РАСЧЁТ ХАРАКТЕРИСТИК С ТАЙМАУТОМ
+                // РАСЧЁТ ХАРАКТЕРИСТИК
                 statusLabel.Text = "⚙️ Расчёт характеристик...";
                 try
                 {
-                    var (result, elapsed) = PerformanceOptimizer.ExecuteWithTimeout(
-                        () => CalculationService.Calculate(_currentRV),
-                        "Расчёт статистики"
-                    );
-
-                    _currentStats = result as StatisticalCharacteristics;
-
+                    // CalculationService умеет работать с DiscreteRandomVariable
+                    _currentStats = CalculationService.Calculate(_currentRV);
                     if (_currentStats == null)
-                    {
                         throw new InvalidOperationException("Расчёт вернул null");
-                    }
 
-                    statusLabel.Text = $"✓ Расчёт выполнен за {elapsed.TotalMilliseconds:F0}ms";
+                    statusLabel.Text = "✓ Расчёт выполнен";
                 }
-                catch (TimeoutException timeoutEx)
+                catch (Exception calcEx)
                 {
-                    ErrorHandler.LogError(timeoutEx, "Таймаут расчёта");
-
-                    ErrorHandler.ShowUserWarning(
-                "Расчёт занял слишком долго. Попробуйте:\n" +
-                "• Уменьшить параметр N\n" +
-                "• Закрыть другие приложения\n" +
-                "• Перезагрузить программу");
-                    return;
-                }
-                catch (OutOfMemoryException memEx)
-                {
-                    ErrorHandler.LogError(memEx, "Недостаточно памяти");
-
-                    ErrorHandler.ShowUserWarning("Недостаточно памяти для расчётов. Уменьшите параметр N.");
+                    ErrorHandler.LogError(calcEx, "Ошибка расчёта характеристик");
+                    ErrorHandler.ShowUserWarning("Ошибка при расчёте характеристик");
                     return;
                 }
 
@@ -419,7 +405,6 @@ namespace DiscreteRVAnalyzer.UI
                 catch (Exception uiEx)
                 {
                     ErrorHandler.LogError(uiEx, "Ошибка обновления UI");
-
                     ErrorHandler.ShowUserWarning("Ошибка при отображении результатов");
                     return;
                 }
@@ -427,13 +412,12 @@ namespace DiscreteRVAnalyzer.UI
                 statusProgressBar.Value = 100;
                 statusLabel.Text = $"✓ Готово | Размер носителя: {_currentRV?.SupportSize ?? 0} | Точность: {(_currentStats?.Mean ?? 0):F4}";
 
-        // Сохранение параметров
-        SaveSettings();
+                // Сохранение параметров
+                SaveSettings();
             }
             catch (Exception ex)
             {
                 ErrorHandler.LogError(ex, "Необработанная ошибка в CalculateButton_Click");
-
                 ErrorHandler.ShowUserError($"Критическая ошибка:\n{ex.Message}");
             }
             finally
@@ -709,6 +693,76 @@ namespace DiscreteRVAnalyzer.UI
                 statisticsListView1.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
 
                 statisticsListView1.EndUpdate();
+            }
+
+            UpdateAlternativeDistributions();
+        }
+
+        private void UpdateAlternativeDistributions()
+        {
+            if (statisticsListView1 == null) return;
+
+            // Create or find group
+            var altGroup = new ListViewGroup("Стандартные распределения");
+            statisticsListView1.Groups.Add(altGroup);
+
+            bool parsedN = int.TryParse(textBoxN.Text?.Trim(), out var n);
+            bool parsedK = int.TryParse(textBoxK.Text?.Trim(), out var k);
+            bool parsedP = double.TryParse((textBoxP.Text ?? string.Empty).Trim().Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var p);
+            bool parsedLambda = double.TryParse((textBoxLambda.Text ?? string.Empty).Trim().Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lambda);
+
+            ListViewItem AddItem(string name, string value)
+            {
+                var lvi = new ListViewItem(name) { Group = altGroup };
+                lvi.SubItems.Add(value);
+                statisticsListView1.Items.Add(lvi);
+                return lvi;
+            }
+
+            try
+            {
+                if (parsedN && parsedP)
+                {
+                    var bin = new DiscreteRVAnalyzer.BinomialDist(n, p);
+                    AddItem($"{bin.Name} M(X)", bin.Mean.ToString("F4"));
+                    AddItem($"{bin.Name} D(X)", bin.Variance.ToString("F4"));
+                }
+
+                if (parsedLambda)
+                {
+                    var poi = new DiscreteRVAnalyzer.PoissonDist(lambda);
+                    AddItem($"{poi.Name} M(X)", poi.Mean.ToString("F4"));
+                    AddItem($"{poi.Name} D(X)", poi.Variance.ToString("F4"));
+                }
+
+                if (parsedP)
+                {
+                    var geo = new DiscreteRVAnalyzer.GeometricDist(p);
+                    AddItem($"{geo.Name} M(X)", geo.Mean.ToString("F4"));
+                    AddItem($"{geo.Name} D(X)", geo.Variance.ToString("F4"));
+                }
+
+                if (parsedN && parsedK)
+                {
+                    // For uniform as an example use K as upper bound? We'll skip hypergeometric here.
+                    // If K looks like b use uniform
+                    int a = 0, b = 0;
+                    if (parsedK)
+                    {
+                        // interpret textBoxN as a and textBoxK as b only if sensible
+                        a = n; b = k;
+                        if (b >= a)
+                        {
+                            var uni = new DiscreteRVAnalyzer.UniformDist(a, b);
+                            AddItem($"{uni.Name} M(X)", uni.Mean.ToString("F4"));
+                            AddItem($"{uni.Name} D(X)", uni.Variance.ToString("F4"));
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // ignore any construction/parsing errors for alternatives
             }
         }
 

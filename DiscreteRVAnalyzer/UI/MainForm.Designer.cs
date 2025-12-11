@@ -285,7 +285,6 @@ namespace DiscreteRVAnalyzer.UI
             distributionComboBox.Items.AddRange(new object[] { "🔧 Произвольная ДВВ" });
             distributionComboBox.Name = "distributionComboBox";
             distributionComboBox.Size = new Size(250, 23);
-            distributionComboBox.Text = "🔧 Произвольная ДВВ";
             distributionComboBox.SelectedIndexChanged += DistributionComboBox_SelectedIndexChanged;
             // 
             // calculateButton
