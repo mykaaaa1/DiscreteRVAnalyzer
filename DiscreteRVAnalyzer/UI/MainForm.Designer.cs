@@ -64,7 +64,8 @@ namespace DiscreteRVAnalyzer.UI
         private OxyPlot.WindowsForms.PlotView pmfPlotView;
         private OxyPlot.WindowsForms.PlotView cdfPlotView;
         private DataGridView gridManual; // Таблица (которой не хватало)
-        private DataGridView manualInputGrid; // новая таблица для ввода значений
+        public DataGridView manualInputGrid; // новая таблица для ввода значений - ПУБЛИЧНАЯ!
+        private GroupBox manualInputGroupBox;
 
         // Status Bar
         private StatusStrip statusStrip;
@@ -109,16 +110,7 @@ namespace DiscreteRVAnalyzer.UI
             testCoachButton = new ToolStripButton();
             mainTableLayout = new TableLayoutPanel();
             leftPanel = new Panel();
-            rightPanel = new Panel();
-            chartTabControl = new TabControl();
-            pmfTabPage = new TabPage();
-            pmfPlotView = new OxyPlot.WindowsForms.PlotView();
-            cdfTabPage = new TabPage();
-            cdfPlotView = new OxyPlot.WindowsForms.PlotView();
-            tableTabPage = new TabPage();
-            gridManual = new DataGridView();
-            dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn2 = new DataGridViewTextBoxColumn();
+            leftInnerTable = new TableLayoutPanel();
             parametersGroupBox = new GroupBox();
             paramsTableLayout = new TableLayoutPanel();
             labelN = new Label();
@@ -130,8 +122,24 @@ namespace DiscreteRVAnalyzer.UI
             labelK = new Label();
             textBoxK = new TextBox();
             resetButton = new Button();
+            manualInputGroupBox = new GroupBox();
+            manualInputGrid = new DataGridView();
+            colX = new DataGridViewTextBoxColumn();
+            colP = new DataGridViewTextBoxColumn();
             statisticsGroupBox = new GroupBox();
             statisticsListView1 = new ListView();
+            rightPanel = new Panel();
+            chartTabControl = new TabControl();
+            pmfTabPage = new TabPage();
+            pmfPlotView = new OxyPlot.WindowsForms.PlotView();
+            cdfTabPage = new TabPage();
+            cdfPlotView = new OxyPlot.WindowsForms.PlotView();
+            tableTabPage = new TabPage();
+            gridManual = new DataGridView();
+            dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn2 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn4 = new DataGridViewTextBoxColumn();
             statusStrip = new StatusStrip();
             statusLabel = new ToolStripStatusLabel();
             statusProgressBar = new ToolStripProgressBar();
@@ -140,15 +148,19 @@ namespace DiscreteRVAnalyzer.UI
             menuStrip.SuspendLayout();
             toolStrip.SuspendLayout();
             mainTableLayout.SuspendLayout();
+            leftPanel.SuspendLayout();
+            leftInnerTable.SuspendLayout();
+            parametersGroupBox.SuspendLayout();
+            paramsTableLayout.SuspendLayout();
+            manualInputGroupBox.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)manualInputGrid).BeginInit();
+            statisticsGroupBox.SuspendLayout();
             rightPanel.SuspendLayout();
             chartTabControl.SuspendLayout();
             pmfTabPage.SuspendLayout();
             cdfTabPage.SuspendLayout();
             tableTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)gridManual).BeginInit();
-            parametersGroupBox.SuspendLayout();
-            paramsTableLayout.SuspendLayout();
-            statisticsGroupBox.SuspendLayout();
             statusStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)errorProvider).BeginInit();
             SuspendLayout();
@@ -270,9 +282,10 @@ namespace DiscreteRVAnalyzer.UI
             // 
             distributionComboBox.AutoSize = false;
             distributionComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            distributionComboBox.Items.AddRange(new object[] { "🎲 Биномиальное B(n, p)", "🔔 Пуассона Po(λ)", "📐 Геометрическое Ge(p)", "🎁 Гипергеометрическое H(N,K,n)", "🔧 Произвольная ДВВ" });
+            distributionComboBox.Items.AddRange(new object[] { "🔧 Произвольная ДВВ" });
             distributionComboBox.Name = "distributionComboBox";
             distributionComboBox.Size = new Size(250, 23);
+            distributionComboBox.Text = "🔧 Произвольная ДВВ";
             distributionComboBox.SelectedIndexChanged += DistributionComboBox_SelectedIndexChanged;
             // 
             // calculateButton
@@ -334,12 +347,221 @@ namespace DiscreteRVAnalyzer.UI
             // 
             // leftPanel
             // 
+            leftPanel.Controls.Add(leftInnerTable);
             leftPanel.Dock = DockStyle.Fill;
             leftPanel.Location = new Point(3, 3);
             leftPanel.Name = "leftPanel";
             leftPanel.Padding = new Padding(10);
             leftPanel.Size = new Size(394, 815);
             leftPanel.TabIndex = 0;
+            // 
+            // leftInnerTable
+            // 
+            leftInnerTable.ColumnCount = 1;
+            leftInnerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            leftInnerTable.Controls.Add(parametersGroupBox, 0, 0);
+            leftInnerTable.Controls.Add(manualInputGroupBox, 0, 1);
+            leftInnerTable.Controls.Add(statisticsGroupBox, 0, 2);
+            leftInnerTable.Dock = DockStyle.Fill;
+            leftInnerTable.Location = new Point(10, 10);
+            leftInnerTable.Name = "leftInnerTable";
+            leftInnerTable.RowCount = 3;
+            leftInnerTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 220F));
+            leftInnerTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 250F));
+            leftInnerTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            leftInnerTable.Size = new Size(374, 795);
+            leftInnerTable.TabIndex = 0;
+            // 
+            // parametersGroupBox
+            // 
+            parametersGroupBox.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            parametersGroupBox.Controls.Add(paramsTableLayout);
+            parametersGroupBox.Dock = DockStyle.Fill;
+            parametersGroupBox.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            parametersGroupBox.Location = new Point(3, 3);
+            parametersGroupBox.Name = "parametersGroupBox";
+            parametersGroupBox.Size = new Size(368, 214);
+            parametersGroupBox.TabIndex = 0;
+            parametersGroupBox.TabStop = false;
+            parametersGroupBox.Text = "⚙️ Параметры";
+            // 
+            // paramsTableLayout
+            // 
+            paramsTableLayout.ColumnCount = 2;
+            paramsTableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
+            paramsTableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
+            paramsTableLayout.Controls.Add(labelN, 0, 0);
+            paramsTableLayout.Controls.Add(textBoxN, 1, 0);
+            paramsTableLayout.Controls.Add(labelP, 0, 1);
+            paramsTableLayout.Controls.Add(textBoxP, 1, 1);
+            paramsTableLayout.Controls.Add(labelLambda, 0, 2);
+            paramsTableLayout.Controls.Add(textBoxLambda, 1, 2);
+            paramsTableLayout.Controls.Add(labelK, 0, 3);
+            paramsTableLayout.Controls.Add(textBoxK, 1, 3);
+            paramsTableLayout.Controls.Add(resetButton, 0, 5);
+            paramsTableLayout.Dock = DockStyle.Fill;
+            paramsTableLayout.Location = new Point(3, 19);
+            paramsTableLayout.Name = "paramsTableLayout";
+            paramsTableLayout.RowCount = 6;
+            paramsTableLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+            paramsTableLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+            paramsTableLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+            paramsTableLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+            paramsTableLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            paramsTableLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
+            paramsTableLayout.Size = new Size(362, 192);
+            paramsTableLayout.TabIndex = 0;
+            // 
+            // labelN
+            // 
+            labelN.AutoSize = true;
+            labelN.Location = new Point(3, 0);
+            labelN.Name = "labelN";
+            labelN.Size = new Size(17, 15);
+            labelN.TabIndex = 0;
+            labelN.Text = "n:";
+            // 
+            // textBoxN
+            // 
+            textBoxN.Dock = DockStyle.Fill;
+            textBoxN.Location = new Point(150, 3);
+            textBoxN.Margin = new Padding(6, 3, 6, 3);
+            textBoxN.Name = "textBoxN";
+            textBoxN.Size = new Size(206, 23);
+            textBoxN.TabIndex = 1;
+            toolTip.SetToolTip(textBoxN, "Число испытаний (целое, n >= 0)");
+            textBoxN.Validating += TextBoxInteger_Validating;
+            // 
+            // labelP
+            // 
+            labelP.AutoSize = true;
+            labelP.Location = new Point(3, 30);
+            labelP.Name = "labelP";
+            labelP.Size = new Size(17, 15);
+            labelP.TabIndex = 2;
+            labelP.Text = "p:";
+            // 
+            // textBoxP
+            // 
+            textBoxP.Dock = DockStyle.Fill;
+            textBoxP.Location = new Point(150, 33);
+            textBoxP.Margin = new Padding(6, 3, 6, 3);
+            textBoxP.Name = "textBoxP";
+            textBoxP.Size = new Size(206, 23);
+            textBoxP.TabIndex = 3;
+            toolTip.SetToolTip(textBoxP, "Вероятность успеха (0 ≤ p ≤ 1)");
+            textBoxP.Validating += TextBoxProbability_Validating;
+            // 
+            // labelLambda
+            // 
+            labelLambda.AutoSize = true;
+            labelLambda.Location = new Point(3, 60);
+            labelLambda.Name = "labelLambda";
+            labelLambda.Size = new Size(17, 15);
+            labelLambda.TabIndex = 4;
+            labelLambda.Text = "λ:";
+            // 
+            // textBoxLambda
+            // 
+            textBoxLambda.Dock = DockStyle.Fill;
+            textBoxLambda.Location = new Point(150, 63);
+            textBoxLambda.Margin = new Padding(6, 3, 6, 3);
+            textBoxLambda.Name = "textBoxLambda";
+            textBoxLambda.Size = new Size(206, 23);
+            textBoxLambda.TabIndex = 5;
+            toolTip.SetToolTip(textBoxLambda, "Параметр λ (> 0)");
+            textBoxLambda.Validating += TextBoxPositiveDouble_Validating;
+            // 
+            // labelK
+            // 
+            labelK.AutoSize = true;
+            labelK.Location = new Point(3, 90);
+            labelK.Name = "labelK";
+            labelK.Size = new Size(18, 15);
+            labelK.TabIndex = 6;
+            labelK.Text = "K:";
+            // 
+            // textBoxK
+            // 
+            textBoxK.Dock = DockStyle.Fill;
+            textBoxK.Location = new Point(150, 93);
+            textBoxK.Margin = new Padding(6, 3, 6, 3);
+            textBoxK.Name = "textBoxK";
+            textBoxK.Size = new Size(206, 23);
+            textBoxK.TabIndex = 7;
+            toolTip.SetToolTip(textBoxK, "Число благоприятных (целое, K >= 0)");
+            textBoxK.Validating += TextBoxInteger_Validating;
+            // 
+            // resetButton
+            // 
+            resetButton.BackColor = Color.LightGray;
+            paramsTableLayout.SetColumnSpan(resetButton, 2);
+            resetButton.Dock = DockStyle.Fill;
+            resetButton.Location = new Point(3, 111);
+            resetButton.Name = "resetButton";
+            resetButton.Size = new Size(356, 78);
+            resetButton.TabIndex = 8;
+            resetButton.Text = "Сбросить";
+            resetButton.UseVisualStyleBackColor = false;
+            resetButton.Click += OnResetClick;
+            // 
+            // manualInputGroupBox
+            // 
+            manualInputGroupBox.Controls.Add(manualInputGrid);
+            manualInputGroupBox.Dock = DockStyle.Fill;
+            manualInputGroupBox.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            manualInputGroupBox.Location = new Point(3, 223);
+            manualInputGroupBox.Name = "manualInputGroupBox";
+            manualInputGroupBox.Size = new Size(368, 244);
+            manualInputGroupBox.TabIndex = 1;
+            manualInputGroupBox.TabStop = false;
+            manualInputGroupBox.Text = "📋 Таблица ввода (произвольная ДВВ)";
+            // 
+            // manualInputGrid
+            // 
+            manualInputGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            manualInputGrid.BackgroundColor = Color.White;
+            manualInputGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            manualInputGrid.Columns.AddRange(new DataGridViewColumn[] { colX, colP });
+            manualInputGrid.Dock = DockStyle.Fill;
+            manualInputGrid.Location = new Point(3, 19);
+            manualInputGrid.Name = "manualInputGrid";
+            manualInputGrid.RowHeadersVisible = false;
+            manualInputGrid.Size = new Size(362, 222);
+            manualInputGrid.TabIndex = 0;
+            // 
+            // colX
+            // 
+            colX.HeaderText = "X (значение)";
+            colX.Name = "colX";
+            // 
+            // colP
+            // 
+            colP.HeaderText = "P (вероятность)";
+            colP.Name = "colP";
+            // 
+            // statisticsGroupBox
+            // 
+            statisticsGroupBox.Controls.Add(statisticsListView1);
+            statisticsGroupBox.Dock = DockStyle.Fill;
+            statisticsGroupBox.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            statisticsGroupBox.Location = new Point(3, 473);
+            statisticsGroupBox.Name = "statisticsGroupBox";
+            statisticsGroupBox.Size = new Size(368, 319);
+            statisticsGroupBox.TabIndex = 1;
+            statisticsGroupBox.TabStop = false;
+            statisticsGroupBox.Text = "📊 Статистика";
+            // 
+            // statisticsListView1
+            // 
+            statisticsListView1.Dock = DockStyle.Fill;
+            statisticsListView1.FullRowSelect = true;
+            statisticsListView1.Location = new Point(3, 19);
+            statisticsListView1.Name = "statisticsListView1";
+            statisticsListView1.Size = new Size(362, 297);
+            statisticsListView1.TabIndex = 0;
+            statisticsListView1.UseCompatibleStateImageBehavior = false;
+            statisticsListView1.View = View.Details;
             // 
             // rightPanel
             // 
@@ -437,161 +659,13 @@ namespace DiscreteRVAnalyzer.UI
             dataGridViewTextBoxColumn2.HeaderText = "P";
             dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
             // 
-            // parametersGroupBox
+            // dataGridViewTextBoxColumn3
             // 
-            parametersGroupBox.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            parametersGroupBox.Controls.Add(paramsTableLayout);
-            parametersGroupBox.Dock = DockStyle.Fill;
-            parametersGroupBox.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            parametersGroupBox.Location = new Point(10, 10);
-            parametersGroupBox.Name = "parametersGroupBox";
-            parametersGroupBox.Size = new Size(374, 320);
-            parametersGroupBox.TabIndex = 0;
-            parametersGroupBox.TabStop = false;
-            parametersGroupBox.Text = "⚙️ Параметры";
+            dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
             // 
-            // paramsTableLayout
+            // dataGridViewTextBoxColumn4
             // 
-            paramsTableLayout.ColumnCount = 2;
-            paramsTableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
-            paramsTableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
-            paramsTableLayout.Controls.Add(labelN, 0, 0);
-            paramsTableLayout.Controls.Add(textBoxN, 1, 0);
-            paramsTableLayout.Controls.Add(labelP, 0, 1);
-            paramsTableLayout.Controls.Add(textBoxP, 1, 1);
-            paramsTableLayout.Controls.Add(labelLambda, 0, 2);
-            paramsTableLayout.Controls.Add(textBoxLambda, 1, 2);
-            paramsTableLayout.Controls.Add(labelK, 0, 3);
-            paramsTableLayout.Controls.Add(textBoxK, 1, 3);
-            paramsTableLayout.Controls.Add(resetButton, 0, 5);
-            paramsTableLayout.Dock = DockStyle.Fill;
-            paramsTableLayout.Location = new Point(3, 19);
-            paramsTableLayout.Name = "paramsTableLayout";
-            paramsTableLayout.RowCount = 6;
-            paramsTableLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
-            paramsTableLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
-            paramsTableLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
-            paramsTableLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
-            paramsTableLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            paramsTableLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 84F));
-            paramsTableLayout.Size = new Size(368, 298);
-            paramsTableLayout.TabIndex = 0;
-            // 
-            // labelN
-            // 
-            labelN.AutoSize = true;
-            labelN.Location = new Point(3, 0);
-            labelN.Name = "labelN";
-            labelN.Size = new Size(17, 15);
-            labelN.TabIndex = 0;
-            labelN.Text = "n:";
-            // 
-            // textBoxN
-            // 
-            textBoxN.Dock = DockStyle.Fill;
-            textBoxN.Location = new Point(153, 3);
-            textBoxN.Margin = new Padding(6, 3, 6, 3);
-            textBoxN.Name = "textBoxN";
-            textBoxN.Size = new Size(209, 23);
-            textBoxN.TabIndex = 1;
-            toolTip.SetToolTip(textBoxN, "Число испытаний (целое, n >= 0)");
-            textBoxN.Validating += TextBoxInteger_Validating;
-            // 
-            // labelP
-            // 
-            labelP.AutoSize = true;
-            labelP.Location = new Point(3, 30);
-            labelP.Name = "labelP";
-            labelP.Size = new Size(17, 15);
-            labelP.TabIndex = 2;
-            labelP.Text = "p:";
-            // 
-            // textBoxP
-            // 
-            textBoxP.Dock = DockStyle.Fill;
-            textBoxP.Location = new Point(153, 33);
-            textBoxP.Margin = new Padding(6, 3, 6, 3);
-            textBoxP.Name = "textBoxP";
-            textBoxP.Size = new Size(209, 23);
-            textBoxP.TabIndex = 3;
-            toolTip.SetToolTip(textBoxP, "Вероятность успеха (0 ≤ p ≤ 1)");
-            textBoxP.Validating += TextBoxProbability_Validating;
-            // 
-            // labelLambda
-            // 
-            labelLambda.AutoSize = true;
-            labelLambda.Location = new Point(3, 60);
-            labelLambda.Name = "labelLambda";
-            labelLambda.Size = new Size(17, 15);
-            labelLambda.TabIndex = 4;
-            labelLambda.Text = "λ:";
-            // 
-            // textBoxLambda
-            // 
-            textBoxLambda.Dock = DockStyle.Fill;
-            textBoxLambda.Location = new Point(153, 63);
-            textBoxLambda.Margin = new Padding(6, 3, 6, 3);
-            textBoxLambda.Name = "textBoxLambda";
-            textBoxLambda.Size = new Size(209, 23);
-            textBoxLambda.TabIndex = 5;
-            toolTip.SetToolTip(textBoxLambda, "Параметр λ (> 0)");
-            textBoxLambda.Validating += TextBoxPositiveDouble_Validating;
-            // 
-            // labelK
-            // 
-            labelK.AutoSize = true;
-            labelK.Location = new Point(3, 90);
-            labelK.Name = "labelK";
-            labelK.Size = new Size(18, 15);
-            labelK.TabIndex = 6;
-            labelK.Text = "K:";
-            // 
-            // textBoxK
-            // 
-            textBoxK.Dock = DockStyle.Fill;
-            textBoxK.Location = new Point(153, 93);
-            textBoxK.Margin = new Padding(6, 3, 6, 3);
-            textBoxK.Name = "textBoxK";
-            textBoxK.Size = new Size(209, 23);
-            textBoxK.TabIndex = 7;
-            toolTip.SetToolTip(textBoxK, "Число благоприятных (целое, K >= 0)");
-            textBoxK.Validating += TextBoxInteger_Validating;
-            // 
-            // resetButton
-            // 
-            resetButton.BackColor = Color.LightGray;
-            paramsTableLayout.SetColumnSpan(resetButton, 2);
-            resetButton.Dock = DockStyle.Fill;
-            resetButton.Location = new Point(3, 217);
-            resetButton.Name = "resetButton";
-            resetButton.Size = new Size(362, 78);
-            resetButton.TabIndex = 8;
-            resetButton.Text = "Сбросить";
-            resetButton.UseVisualStyleBackColor = false;
-            resetButton.Click += OnResetClick;
-            // 
-            // statisticsGroupBox
-            // 
-            statisticsGroupBox.Controls.Add(statisticsListView1);
-            statisticsGroupBox.Dock = DockStyle.Fill;
-            statisticsGroupBox.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            statisticsGroupBox.Location = new Point(0, 0);
-            statisticsGroupBox.Name = "statisticsGroupBox";
-            statisticsGroupBox.Size = new Size(200, 100);
-            statisticsGroupBox.TabIndex = 1;
-            statisticsGroupBox.TabStop = false;
-            statisticsGroupBox.Text = "📊 Статистика";
-            // 
-            // statisticsListView1
-            // 
-            statisticsListView1.Dock = DockStyle.Fill;
-            statisticsListView1.FullRowSelect = true;
-            statisticsListView1.Location = new Point(3, 19);
-            statisticsListView1.Name = "statisticsListView1";
-            statisticsListView1.Size = new Size(194, 78);
-            statisticsListView1.TabIndex = 0;
-            statisticsListView1.UseCompatibleStateImageBehavior = false;
-            statisticsListView1.View = View.Details;
+            dataGridViewTextBoxColumn4.Name = "dataGridViewTextBoxColumn4";
             // 
             // statusStrip
             // 
@@ -637,16 +711,20 @@ namespace DiscreteRVAnalyzer.UI
             toolStrip.ResumeLayout(false);
             toolStrip.PerformLayout();
             mainTableLayout.ResumeLayout(false);
+            leftPanel.ResumeLayout(false);
+            leftInnerTable.ResumeLayout(false);
+            parametersGroupBox.ResumeLayout(false);
+            paramsTableLayout.ResumeLayout(false);
+            paramsTableLayout.PerformLayout();
+            manualInputGroupBox.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)manualInputGrid).EndInit();
+            statisticsGroupBox.ResumeLayout(false);
             rightPanel.ResumeLayout(false);
             chartTabControl.ResumeLayout(false);
             pmfTabPage.ResumeLayout(false);
             cdfTabPage.ResumeLayout(false);
             tableTabPage.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)gridManual).EndInit();
-            parametersGroupBox.ResumeLayout(false);
-            paramsTableLayout.ResumeLayout(false);
-            paramsTableLayout.PerformLayout();
-            statisticsGroupBox.ResumeLayout(false);
             statusStrip.ResumeLayout(false);
             statusStrip.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)errorProvider).EndInit();
@@ -666,5 +744,9 @@ namespace DiscreteRVAnalyzer.UI
 
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
+        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
+        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn4;
+        private DataGridViewTextBoxColumn colX;
+        private DataGridViewTextBoxColumn colP;
     }
 }

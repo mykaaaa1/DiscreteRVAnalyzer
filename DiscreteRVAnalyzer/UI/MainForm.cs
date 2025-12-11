@@ -13,6 +13,7 @@ using OxyPlot.ImageSharp;
 using DiscreteRVAnalyzer.Models;
 using DiscreteRVAnalyzer.Services;
 using DiscreteRVAnalyzer.Services.Distributions;
+using DiscreteRVAnalyzer.Utils;
 
 namespace DiscreteRVAnalyzer.UI
 {
@@ -60,63 +61,178 @@ namespace DiscreteRVAnalyzer.UI
             this.FormClosing += (s, e) => SaveSettings();
         }
 
+        private bool ValidateVisibleParameters()
+        {
+            var errors = new List<string>();
+
+            // Проверка N
+            if (textBoxN.Visible)
+            {
+                string errMsg;
+                if (!InputValidator.TryParseInt(
+                    textBoxN.Text,
+                    InputValidator.MIN_N,
+                    InputValidator.MAX_N,
+                    out var n,
+                    out errMsg))
+                {
+                    errors.Add($"Параметр N: {errMsg}");
+
+                    textBoxN.BackColor = System.Drawing.Color.MistyRose;
+                }
+                else
+                {
+                    textBoxN.BackColor = System.Drawing.Color.White;
+
+                    // Дополнительная валидация для конкретных распределений
+                    switch (distributionComboBox.SelectedIndex)
+                    {
+                        case 0: // Биномиальное
+                            var pErr = InputValidator.TryParseProbability(textBoxP.Text, out var p, out _);
+                            if (pErr)
+                            {
+                                var binErr = InputValidator.ValidateBinomial(n, p);
+                                if (binErr != null) errors.Add($"Параметры биномиального: {binErr}");
+                            }
+                            break;
+                        case 3: // Гипергеометрическое
+                            if (InputValidator.TryParseInt(textBoxK.Text, 0, n, out var k, out _) &&
+                                InputValidator.TryParseInt(textBoxP.Text, 1, int.MaxValue, out var sampleSize, out _))
+                            {
+                                var hypErr = InputValidator.ValidateHypergeometric(n, k, sampleSize);
+                                if (hypErr != null) errors.Add($"Параметры гипергеометрического: {hypErr}");
+                            }
+                            break;
+                    }
+                }
+            }
+
+            // Проверка P
+            if (textBoxP.Visible)
+            {
+                string errMsg;
+                if (!InputValidator.TryParseProbability(textBoxP.Text, out var p, out errMsg))
+                {
+                    errors.Add($"Параметр P: {errMsg}");
+
+                    textBoxP.BackColor = System.Drawing.Color.MistyRose;
+                }
+                else
+                {
+                    textBoxP.BackColor = System.Drawing.Color.White;
+                }
+            }
+
+            // Проверка Lambda
+            if (textBoxLambda.Visible)
+            {
+                string errMsg;
+                if (!InputValidator.TryParsePositiveDouble(
+                    textBoxLambda.Text,
+                    InputValidator.MIN_LAMBDA,
+                    InputValidator.MAX_LAMBDA,
+                    out var lambda,
+                    out errMsg))
+                {
+                    errors.Add($"Параметр λ: {errMsg}");
+
+                    textBoxLambda.BackColor = System.Drawing.Color.MistyRose;
+                }
+                else
+                {
+                    textBoxLambda.BackColor = System.Drawing.Color.White;
+                    var poisErr = InputValidator.ValidatePoisson(lambda);
+                    if (poisErr != null) errors.Add($"Параметры Пуассона: {poisErr}");
+                }
+            }
+
+            // Проверка K
+            if (textBoxK.Visible)
+            {
+                string errMsg;
+                if (!InputValidator.TryParseInt(textBoxK.Text, 0, int.MaxValue, out _, out errMsg))
+                {
+                    errors.Add($"Параметр K: {errMsg}");
+
+                    textBoxK.BackColor = System.Drawing.Color.MistyRose;
+                }
+                else
+                {
+                    textBoxK.BackColor = System.Drawing.Color.White;
+                }
+            }
+
+            // Проверка произвольной ДВВ
+            bool arbitraryOnly = distributionComboBox.Items.Count == 1;
+            if (arbitraryOnly || distributionComboBox.SelectedIndex == 4)
+            {
+                if ((manualInputGrid?.Rows.Count ?? 0) == 0)
+                {
+                    errors.Add("Таблица ввода пуста. Добавьте хотя бы одну строку.");
+                }
+            }
+
+            // Если есть ошибки, показываем их
+            if (errors.Count > 0)
+            {
+                string errorMessage = string.Join("\n", errors);
+
+                ErrorHandler.ShowUserWarning(errorMessage, "Ошибки валидации");
+
+                statusLabel.Text = "✗ Ошибка в параметрах";
+                return false;
+            }
+
+            return true;
+        }
+
+
         private void LoadSettings()
         {
             try
             {
-                if (!File.Exists(SettingsFileName)) return;
-                var json = File.ReadAllText(SettingsFileName);
-                var settings = JsonSerializer.Deserialize<UserSettings>(json);
-                if (settings == null) return;
+                var config = ConfigurationManager.LoadConfig();
+                _currentTheme = config.Theme == "Dark" ? ThemeMode.Dark : ThemeMode.Light;
 
-                _currentTheme = settings.Theme;
+                textBoxN.Text = config.ParameterN;
+                textBoxP.Text = config.ParameterP;
+                textBoxLambda.Text = config.ParameterLambda;
+                textBoxK.Text = config.ParameterK;
 
-                // apply texts after InitializeComponent
-                textBoxN.Text = settings.TextN;
-                textBoxP.Text = settings.TextP;
-                textBoxLambda.Text = settings.TextLambda;
-                textBoxK.Text = settings.TextK;
-
-                if (settings.DistributionIndex >= 0 && settings.DistributionIndex < distributionComboBox.Items.Count)
-                    distributionComboBox.SelectedIndex = settings.DistributionIndex;
+                if (config.DistributionIndex >= 0 && config.DistributionIndex < distributionComboBox.Items.Count)
+                    distributionComboBox.SelectedIndex = config.DistributionIndex;
             }
-            catch
+            catch (Exception ex)
             {
-                // ignore errors, use defaults
+                ErrorHandler.LogError(ex, "Ошибка при загрузке настроек");
+                // Продолжаем с значениями по умолчанию
             }
         }
 
+
         private void SaveSettings()
         {
-            try
+            var config = new ConfigurationManager.AppConfig
             {
-                var settings = new UserSettings
-                {
-                    DistributionIndex = distributionComboBox.SelectedIndex >= 0 ? distributionComboBox.SelectedIndex : 0,
-                    TextN = textBoxN.Text ?? "",
-                    TextP = textBoxP.Text ?? "",
-                    TextLambda = textBoxLambda.Text ?? "",
-                    TextK = textBoxK.Text ?? "",
-                    Theme = _currentTheme
-                };
-                var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(SettingsFileName, json);
-            }
-            catch
-            {
-                // ignore persistence errors
-            }
+                DistributionIndex = distributionComboBox.SelectedIndex >= 0 ? distributionComboBox.SelectedIndex : 0,
+                ParameterN = textBoxN.Text ?? "",
+                ParameterP = textBoxP.Text ?? "",
+                ParameterLambda = textBoxLambda.Text ?? "",
+                ParameterK = textBoxK.Text ?? "",
+                Theme = _currentTheme == ThemeMode.Dark ? "Dark" : "Light"
+            };
+            ConfigurationManager.SaveConfig(config);
         }
 
         private void RunFirstRunCoach()
         {
             var steps = new (string message, object target)[]
             {
-                ("Выберите тип распределения здесь.\nНапример: 'Биномиальное B(n,p)'", (object)distributionComboBox),
-                ("Введите число испытаний 'n' здесь (целое).", (object)textBoxN),
-                ("Введите вероятность 'p' здесь (0..1).", (object)textBoxP),
-                ("Нажмите 'Рассчитать' чтобы выполнить вычисления и построить графики.", (object)calculateButton),
-                ("Переключитесь на вкладку 'Таблица значений' чтобы внести произвольную ДВВ.\nДобавьте строки X и P.", (object)chartTabControl)
+        ("Выберите тип распределения здесь.\nНапример: 'Биномиальное B(n,p)'", (object)distributionComboBox),
+        ("Введите число испытаний 'n' здесь (целое).", (object)textBoxN),
+        ("Введите вероятность 'p' здесь (0..1).", (object)textBoxP),
+        ("Нажмите 'Рассчитать' чтобы выполнить вычисления и построить графики.", (object)calculateButton),
+        ("Переключитесь на вкладку 'Таблица значений' чтобы внести произвольную ДВВ.\nДобавьте строки X и P.", (object)chartTabControl)
             };
 
             FirstRunCoachForm.RunSequence(this, steps);
@@ -147,26 +263,38 @@ namespace DiscreteRVAnalyzer.UI
         {
             bool showN = false, showP = false, showLambda = false, showK = false;
 
-            switch (distributionComboBox.SelectedIndex)
+            // If combobox contains only the arbitrary option, treat as arbitrary-only mode
+            bool arbitraryOnly = distributionComboBox.Items.Count == 1;
+
+            int selectedIndex = distributionComboBox.SelectedIndex;
+            if (arbitraryOnly)
             {
-                case 0: // Биномиальное
-                    showN = showP = true;
-                    labelP.Text = "p (вероятность):";
-                    break;
-                case 1: // Пуассона
-                    showLambda = true;
-                    break;
-                case 2: // Геометрическое
-                    showP = true;
-                    labelP.Text = "p (вероятность):";
-                    break;
-                case 3: // Гипергеометрическое
-                    showN = showK = showP = true;
-                    labelP.Text = "n (размер выборки):";
-                    break;
-                case 4: // Произвольная ДВВ
-                    // все параметры скрываем — работаем с таблицей
-                    break;
+                // hide all parameter inputs when only manual distribution is available
+                showN = showP = showLambda = showK = false;
+            }
+            else
+            {
+                switch (selectedIndex)
+                {
+                    case 0: // Биномиальное
+                        showN = showP = true;
+                        labelP.Text = "p (вероятность):";
+                        break;
+                    case 1: // Пуассона
+                        showLambda = true;
+                        break;
+                    case 2: // Геометрическое
+                        showP = true;
+                        labelP.Text = "p (вероятность):";
+                        break;
+                    case 3: // Гипергеометрическое
+                        showN = showK = showP = true;
+                        labelP.Text = "n (размер выборки):";
+                        break;
+                    case 4: // Произвольная ДВВ
+                        // все параметры скрываем — работаем с таблицей
+                        break;
+                }
             }
 
             labelN.Visible = textBoxN.Visible = showN;
@@ -175,102 +303,142 @@ namespace DiscreteRVAnalyzer.UI
             labelK.Visible = textBoxK.Visible = showK;
             // manual input grid visible only for arbitrary distribution
             if (manualInputGrid != null)
-                manualInputGrid.Visible = distributionComboBox.SelectedIndex == 4;
+                manualInputGrid.Visible = arbitraryOnly || distributionComboBox.SelectedIndex == 4;
         }
 
         private void CalculateButton_Click(object? sender, EventArgs e)
         {
-            // Validate only visible parameter fields to avoid unrelated validation blocking calculation
-            bool valid = true;
-            var cea = new CancelEventArgs();
-
-            if (textBoxN.Visible)
-            {
-                cea.Cancel = false;
-                TextBoxInteger_Validating(textBoxN, cea);
-                if (cea.Cancel) valid = false;
-            }
-
-            if (textBoxP.Visible)
-            {
-                cea.Cancel = false;
-                TextBoxProbability_Validating(textBoxP, cea);
-                if (cea.Cancel) valid = false;
-            }
-
-            if (textBoxLambda.Visible)
-            {
-                cea.Cancel = false;
-                TextBoxPositiveDouble_Validating(textBoxLambda, cea);
-                if (cea.Cancel) valid = false;
-            }
-
-            if (textBoxK.Visible)
-            {
-                cea.Cancel = false;
-                TextBoxInteger_Validating(textBoxK, cea);
-                if (cea.Cancel) valid = false;
-            }
-
-            if (!valid)
-            {
-                statusLabel.Text = "Ошибка в параметрах";
-                MessageBox.Show("Проверьте поля ввода слева — они содержат неверные значения.", "Ошибка ввода", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
             try
             {
-                statusLabel.Text = "Проверка данных...";
+                statusLabel.Text = "⏳ Проверка параметров...";
                 statusProgressBar.Visible = true;
-                statusProgressBar.Value = 10;
+                statusProgressBar.Value = 5;
                 Application.DoEvents();
 
-                if (distributionComboBox.SelectedIndex == 4)
+                // ВАЛИДАЦИЯ ВИДИМЫХ ПОЛЕЙ
+                if (!ValidateVisibleParameters())
+                    return; // Ошибка уже показана пользователю
+
+                statusProgressBar.Value = 20;
+
+                // ПОЛУЧЕНИЕ РАСПРЕДЕЛЕНИЯ
+                DiscreteRandomVariable currentRV = null;
+                try
                 {
-                    // Произвольная ДВВ из таблицы (приоритет manualInputGrid в параметрах)
-                    _currentRV = BuildManualRandomVariable();
+                    if (distributionComboBox.SelectedIndex == 4)
+                    {
+                        // Произвольная ДВВ
+                        currentRV = BuildManualRandomVariable();
+                    }
+                    else
+                    {
+                        var dist = GetSelectedDistribution();
+                        currentRV = dist?.Generate();
+                    }
+
+                    if (currentRV == null)
+                    {
+                        ErrorHandler.ShowUserWarning("Не удалось создать распределение");
+                        return;
+                    }
                 }
-                else
+                catch (ArgumentException argEx)
                 {
-                    var dist = GetSelectedDistribution();
-                    statusProgressBar.Value = 40;
-                    _currentRV = dist.Generate();
+                    ErrorHandler.LogError(argEx, "Ошибка параметров");
+
+                    ErrorHandler.ShowUserWarning($"Ошибка параметров: {argEx.Message}");
+                    return;
                 }
 
-                // НОВОЕ: Валидация перед расчётом
-                statusLabel.Text = "Валидация распределения...";
-                statusProgressBar.Value = 50;
-                _currentRV.Validate();
+                statusProgressBar.Value = 40;
+                Application.DoEvents();
 
-                statusProgressBar.Value = 70;
+                // ВАЛИДАЦИЯ РАСПРЕДЕЛЕНИЯ
+                try
+                {
+                    currentRV.Validate();
+                }
+                catch (InvalidOperationException invalidEx)
+                {
+                    ErrorHandler.LogError(invalidEx, "Распределение невалидно");
 
-                statusLabel.Text = "Расчёт характеристик...";
-                _currentStats = CalculationService.Calculate(_currentRV);
-                statusProgressBar.Value = 90;
+                    ErrorHandler.ShowUserWarning($"Распределение некорректно: {invalidEx.Message}");
+                    return;
+                }
 
-                UpdateStatistics();
-                UpdateCharts();
+                _currentRV = currentRV;
+                statusProgressBar.Value = 60;
+                Application.DoEvents();
 
-                statusLabel.Text = $"✓ Готово | Размер носителя: {_currentRV.SupportSize}";
-                statusProgressBar.Visible = false;
+                // РАСЧЁТ ХАРАКТЕРИСТИК С ТАЙМАУТОМ
+                statusLabel.Text = "⚙️ Расчёт характеристик...";
+                try
+                {
+                    var (result, elapsed) = PerformanceOptimizer.ExecuteWithTimeout(
+                        () => CalculationService.Calculate(_currentRV),
+                        "Расчёт статистики"
+                    );
 
-                // Save current parameters
-                SaveSettings();
+                    _currentStats = result as StatisticalCharacteristics;
+
+                    if (_currentStats == null)
+                    {
+                        throw new InvalidOperationException("Расчёт вернул null");
+                    }
+
+                    statusLabel.Text = $"✓ Расчёт выполнен за {elapsed.TotalMilliseconds:F0}ms";
+                }
+                catch (TimeoutException timeoutEx)
+                {
+                    ErrorHandler.LogError(timeoutEx, "Таймаут расчёта");
+
+                    ErrorHandler.ShowUserWarning(
+                "Расчёт занял слишком долго. Попробуйте:\n" +
+                "• Уменьшить параметр N\n" +
+                "• Закрыть другие приложения\n" +
+                "• Перезагрузить программу");
+                    return;
+                }
+                catch (OutOfMemoryException memEx)
+                {
+                    ErrorHandler.LogError(memEx, "Недостаточно памяти");
+
+                    ErrorHandler.ShowUserWarning("Недостаточно памяти для расчётов. Уменьшите параметр N.");
+                    return;
+                }
+
+                statusProgressBar.Value = 85;
+                Application.DoEvents();
+
+                // ОБНОВЛЕНИЕ UI
+                try
+                {
+                    UpdateStatistics();
+                    UpdateCharts();
+                }
+                catch (Exception uiEx)
+                {
+                    ErrorHandler.LogError(uiEx, "Ошибка обновления UI");
+
+                    ErrorHandler.ShowUserWarning("Ошибка при отображении результатов");
+                    return;
+                }
+
+                statusProgressBar.Value = 100;
+                statusLabel.Text = $"✓ Готово | Размер носителя: {_currentRV?.SupportSize ?? 0} | Точность: {(_currentStats?.Mean ?? 0):F4}";
+
+        // Сохранение параметров
+        SaveSettings();
             }
             catch (Exception ex)
             {
+                ErrorHandler.LogError(ex, "Необработанная ошибка в CalculateButton_Click");
+
+                ErrorHandler.ShowUserError($"Критическая ошибка:\n{ex.Message}");
+            }
+            finally
+            {
                 statusProgressBar.Visible = false;
-                statusLabel.Text = "✗ Ошибка";
-                MessageBox.Show(
-                    $"Ошибка:\n\n{ex.Message}\n\n" +
-                    $"Убедитесь, что:\n" +
-                    $"• Все вероятности в диапазоне [0, 1]\n" +
-                    $"• Сумма всех вероятностей = 1\n" +
-                    $"• Параметры распределения корректны",
-                    "Ошибка расчёта",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
             }
         }
 
@@ -374,64 +542,90 @@ namespace DiscreteRVAnalyzer.UI
             var rv = new DiscreteRandomVariable
             {
                 Name = "X",
-                Description = "Произвольная ДВВ (ввод с таблицы)"
+                Description = "Произвольная ДВВ"
             };
 
-            var dict = new System.Collections.Generic.Dictionary<int, double>();
-
-            // prefer manualInputGrid (in parameters) if it exists and has rows, otherwise fallback to gridManual (tab)
+            var dict = new Dictionary<int, double>();
             DataGridView source = null;
-            if (manualInputGrid != null && manualInputGrid.Rows.Count > 0)
+
+            // Выбираем источник данных
+            if (manualInputGrid?.Rows.Count > 0)
                 source = manualInputGrid;
-            else if (gridManual != null && gridManual.Rows.Count > 0)
+            else if (gridManual?.Rows.Count > 0)
                 source = gridManual;
 
             if (source == null)
                 throw new InvalidOperationException("Таблица ДВВ пуста. Заполните хотя бы одну строку.");
 
+
+            double totalProbability = 0;
+
+            // Парсим таблицу
             foreach (DataGridViewRow row in source.Rows)
             {
                 if (row.IsNewRow) continue;
 
-                object xObj, pObj;
-                // manualInputGrid uses named columns colX/colP; gridManual may not
-                if (source == manualInputGrid)
+                try
                 {
-                    xObj = row.Cells["colX"].Value;
-                    pObj = row.Cells["colP"].Value;
+                    object xObj = source == manualInputGrid
+                        ? row.Cells["colX"].Value 
+
+                        : (row.Cells.Count > 0 ? row.Cells[0].Value : null);
+
+                    object pObj = source == manualInputGrid
+                        ? row.Cells["colP"].Value 
+
+                        : (row.Cells.Count > 1 ? row.Cells[1].Value : null);
+
+                    if (xObj == null || pObj == null)
+                        continue;
+
+                    // Парсим X
+                    string xStr = xObj.ToString()?.Trim().Replace(',', '.') ?? "";
+                    if (!double.TryParse(xStr, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var xVal))
+                        throw new FormatException($"Некорректное значение X: '{xObj}'");
+
+            // Парсим P
+                    string pStr = pObj.ToString()?.Trim().Replace(',', '.') ?? "";
+                    if (!double.TryParse(pStr, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var pVal))
+                        throw new FormatException($"Некорректное значение P: '{pObj}'");
+
+            if (pVal < 0)
+                        throw new ArgumentException($"Вероятность не может быть отрицательной (X={xVal})");
+
+            if (pVal > 1)
+                        throw new ArgumentException($"Вероятность не может быть > 1 (X={xVal})");
+
+
+                    int xInt = (int)Math.Round(xVal);
+                    totalProbability += pVal;
+
+                    if (dict.ContainsKey(xInt))
+                        dict[xInt] += pVal;
+                    else
+                        dict[xInt] = pVal;
                 }
-                else
+                catch (Exception rowEx)
                 {
-                    xObj = row.Cells.Count > 0 ? row.Cells[0].Value : null;
-                    pObj = row.Cells.Count > 1 ? row.Cells[1].Value : null;
+                    ErrorHandler.LogError(rowEx, $"Ошибка при парсинге строки {row.Index}");
+
+                    throw new InvalidOperationException($"Ошибка в строке {row.Index}: {rowEx.Message}");
                 }
-
-                if (xObj == null || pObj == null) continue;
-
-                if (!double.TryParse(xObj.ToString()?.Replace(',', '.'),
-                        NumberStyles.Float, CultureInfo.InvariantCulture, out var xVal))
-                    throw new FormatException($"Некорректное значение X: '{xObj}'");
-
-                if (!double.TryParse(pObj.ToString()?.Replace(',', '.'),
-                        NumberStyles.Float, CultureInfo.InvariantCulture, out var pVal))
-                    throw new FormatException($"Некорректное значение P: '{pObj}'");
-
-                if (pVal < 0)
-                    throw new ArgumentException($"Вероятность не может быть отрицательной (X={xVal}).");
-
-                int xInt = (int)Math.Round(xVal);
-
-                if (dict.ContainsKey(xInt))
-                    dict[xInt] += pVal;
-                else
-                    dict[xInt] = pVal;
             }
 
+            if (Math.Abs(totalProbability) < 0.01)
+                throw new InvalidOperationException("Сумма вероятностей близка к нулю");
+
+
             rv.LoadDistribution(dict);
-            rv.Normalize();   // сумма P -> 1
+            rv.Normalize();
             rv.Validate();
+
             return rv;
         }
+
 
         // ===== ОБНОВЛЕНИЕ СТАТИСТИКИ И ГРАФИКОВ =====
 
