@@ -1,34 +1,37 @@
 ﻿using System;
 using System.Collections.Generic;
+using DiscreteRVAnalyzer.Utils;
 using DiscreteRVAnalyzer.Models;
 
 namespace DiscreteRVAnalyzer.Services.Distributions
 {
-    public sealed class PoissonDistribution : DistributionBase
+    public class PoissonDistribution : DistributionBase
     {
-        private readonly double _lambda;
+        private double _lambda; // Інтенсивність
 
         public PoissonDistribution(double lambda)
         {
-            if (lambda <= 0) throw new ArgumentException("λ > 0");
+            if (lambda <= 0) throw new ArgumentException("Лямбда має бути додатною.");
             _lambda = lambda;
         }
 
         public override string Name => "Пуассона";
-        public override string Description => $"Po(λ={_lambda:F3})";
+        public override string Description => $"Po(lambda={_lambda})";
 
         public override DiscreteRandomVariable Generate()
         {
+            // approximate support until probabilities become negligible
             var dict = new Dictionary<int, double>();
-            double prob = Math.Exp(-_lambda);
-            dict[0] = prob;
-
-            int k = 1;
-            while (k < 100 && prob > 1e-15)
+            double sum = 0;
+            int k = 0;
+            while (true)
             {
-                prob *= _lambda / k;
-                dict[k] = prob;
+                double p = (Math.Pow(_lambda, k) * Math.Exp(-_lambda)) / MathHelper.Factorial(k);
+                dict[k] = p;
+                sum += p;
+                if (p < 1e-8 && k > _lambda * 5) break;
                 k++;
+                if (k > 1000) break; // safety
             }
 
             var rv = new DiscreteRandomVariable

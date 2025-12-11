@@ -173,6 +173,9 @@ namespace DiscreteRVAnalyzer.UI
             labelP.Visible = textBoxP.Visible = showP;
             labelLambda.Visible = textBoxLambda.Visible = showLambda;
             labelK.Visible = textBoxK.Visible = showK;
+            // manual input grid visible only for arbitrary distribution
+            if (manualInputGrid != null)
+                manualInputGrid.Visible = distributionComboBox.SelectedIndex == 4;
         }
 
         private void CalculateButton_Click(object? sender, EventArgs e)
@@ -225,7 +228,7 @@ namespace DiscreteRVAnalyzer.UI
 
                 if (distributionComboBox.SelectedIndex == 4)
                 {
-                    // Произвольная ДВВ из таблицы
+                    // Произвольная ДВВ из таблицы (приоритет manualInputGrid в параметрах)
                     _currentRV = BuildManualRandomVariable();
                 }
                 else
@@ -376,12 +379,33 @@ namespace DiscreteRVAnalyzer.UI
 
             var dict = new System.Collections.Generic.Dictionary<int, double>();
 
-            foreach (DataGridViewRow row in gridManual.Rows)
+            // prefer manualInputGrid (in parameters) if it exists and has rows, otherwise fallback to gridManual (tab)
+            DataGridView source = null;
+            if (manualInputGrid != null && manualInputGrid.Rows.Count > 0)
+                source = manualInputGrid;
+            else if (gridManual != null && gridManual.Rows.Count > 0)
+                source = gridManual;
+
+            if (source == null)
+                throw new InvalidOperationException("Таблица ДВВ пуста. Заполните хотя бы одну строку.");
+
+            foreach (DataGridViewRow row in source.Rows)
             {
                 if (row.IsNewRow) continue;
 
-                var xObj = row.Cells["colX"].Value;
-                var pObj = row.Cells["colP"].Value;
+                object xObj, pObj;
+                // manualInputGrid uses named columns colX/colP; gridManual may not
+                if (source == manualInputGrid)
+                {
+                    xObj = row.Cells["colX"].Value;
+                    pObj = row.Cells["colP"].Value;
+                }
+                else
+                {
+                    xObj = row.Cells.Count > 0 ? row.Cells[0].Value : null;
+                    pObj = row.Cells.Count > 1 ? row.Cells[1].Value : null;
+                }
+
                 if (xObj == null || pObj == null) continue;
 
                 if (!double.TryParse(xObj.ToString()?.Replace(',', '.'),
@@ -402,9 +426,6 @@ namespace DiscreteRVAnalyzer.UI
                 else
                     dict[xInt] = pVal;
             }
-
-            if (dict.Count == 0)
-                throw new InvalidOperationException("Таблица ДВВ пуста. Заполните хотя бы одну строку.");
 
             rv.LoadDistribution(dict);
             rv.Normalize();   // сумма P -> 1
@@ -577,6 +598,7 @@ namespace DiscreteRVAnalyzer.UI
             pmfPlotView.Model = null;
             cdfPlotView.Model = null;
             gridManual.Rows.Clear();
+            if (manualInputGrid != null) manualInputGrid.Rows.Clear();
 
             statusLabel.Text = "Параметры сброшены";
 
